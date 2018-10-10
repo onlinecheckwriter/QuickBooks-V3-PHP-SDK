@@ -174,30 +174,57 @@ class Bind extends Common
                         throw new \RuntimeException('Class ' . get_class($model) . ' does not have property ' . $name);
                     }
                 } else {
-                    if (!property_exists($model, $name)) {
-                        throw new \RuntimeException("Model " . get_class($model) . " does not have property " . $name);
-                    }
-                    if (!class_exists($className)) {
-                        //print_r($className."\n");
-                        $propertyDocs = $refl->getProperty($name)->getDocComment();
-                        $docs = $this->parseDocComments($propertyDocs);
-                        $type = $docs['xmlType'];
-                        //print_r("Type: ". $type."\n");
-                        if ($type == 'attribute') {
-                            $model->{$name} = $child->nodeValue;
-                        } elseif ($type == 'element') {
-                            $model->{$name} = $child->nodeValue;
-                        } // elseif ($type == 'value') {
-                        //    $model->value = $child->nodeValue;
-                        //}
-                        else {
-                            throw new \RuntimeException('Class ' . $className . ' does not exist');
+                    if ($child->hasAttributes())
+                    {
+                        if ($this->overrideAsSingleNamespace) {
+                            $nsLastName = array_reverse(explode('\\', $className));
+                            $className = $nsLastName[0];
                         }
-                    } else {
-                        //$name = $child->nodeName;
-                        $cModel = new $className();
-                        $cModel->value = $child->nodeValue;
-                        $model->{$name} = $cModel;
+                        /**
+                         *Vish Singh: Solution to Bug # IPP-4748
+                         *Add Check if the class Exists. @Hao
+                         */
+                        if (class_exists($className, CoreConstants::USE_AUTOLOADER)) {
+                            //Do nothing
+                        } elseif (class_exists(CoreConstants::NAMEPSACE_DATA_PREFIX . $className)) {
+                            $className = CoreConstants::NAMEPSACE_DATA_PREFIX . $className;
+                        } else {
+                            throw new \Exception("Can't find corresponding CLASS for className" . $className . " in Bind.php");
+                        }
+                        $cls = new $className;
+                        foreach($child->attributes as $attr)
+                        {
+                            $cls->{$attr->nodeName} = $attr->nodeValue;
+                        }
+                        $cls->{"value"} = $child->nodeValue;
+                        $model->{$name} = $cls;
+                    }
+                    else {
+                        if (!property_exists($model, $name)) {
+                            throw new \RuntimeException("Model " . get_class($model) . " does not have property " . $name);
+                        }
+                        if (!class_exists($className)) {
+                            //print_r($className."\n");
+                            $propertyDocs = $refl->getProperty($name)->getDocComment();
+                            $docs = $this->parseDocComments($propertyDocs);
+                            $type = $docs['xmlType'];
+                            //print_r("Type: ". $type."\n");
+                            if ($type == 'attribute') {
+                                $model->{$name} = $child->nodeValue;
+                            } elseif ($type == 'element') {
+                                $model->{$name} = $child->nodeValue;
+                            } // elseif ($type == 'value') {
+                            //    $model->value = $child->nodeValue;
+                            //}
+                            else {
+                                throw new \RuntimeException('Class ' . $className . ' does not exist');
+                            }
+                        } else {
+                            //$name = $child->nodeName;
+                            $cModel = new $className();
+                            $cModel->value = $child->nodeValue;
+                            $model->{$name} = $cModel;
+                        }
                     }
                 }
             }
