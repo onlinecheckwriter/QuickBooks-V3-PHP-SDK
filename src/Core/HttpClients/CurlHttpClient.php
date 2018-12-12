@@ -146,9 +146,10 @@ class CurlHttpClient implements HttpClientInterface{
      */
     private function setSSL(&$curl_opt, $verifySSL){
       $tlsVersion = $this->basecURL->versionOfTLS();
-      if(strcmp($tlsVersion, "TLS 1.2") != 0){
+   /*   if(strcmp($tlsVersion, "TLS 1.2") != 0){
           throw new SdkException("Error. Checking TLS 1.2 version failed. Please make sure your PHP cURL supports TSL 1.2");
       }
+      */
       if($verifySSL){
           $curl_opt[CURLOPT_SSL_VERIFYPEER] = true;
           $curl_opt[CURLOPT_SSL_VERIFYHOST] = 2;
